@@ -2,9 +2,8 @@ from __future__ import annotations
 import pickle
 
 from collections import UserDict
-from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
 
 T = TypeVar("T")
@@ -190,11 +189,9 @@ class AddressBook(UserDict):
                 continue
 
             bday = record.birthday.date
-            # Next occurrence in this year
             try:
                 next_bday = bday.replace(year=today.year)
             except ValueError:
-                # For 29.02: if current year is not leap, move to 28.02 (common workaround)
                 next_bday = date(today.year, 2, 28)
 
             if next_bday < today:
@@ -205,7 +202,6 @@ class AddressBook(UserDict):
 
             if today <= next_bday <= end_day:
                 cong_date = next_bday
-                # 5 = Saturday, 6 = Sunday
                 if cong_date.weekday() == 5:
                     cong_date += timedelta(days=2)
                 elif cong_date.weekday() == 6:
@@ -218,9 +214,21 @@ class AddressBook(UserDict):
                     }
                 )
 
-        # Sort by congratulation_date for nicer output
         result.sort(key=lambda x: x["congratulation_date"])
         return result
+
+
+def save_data(book: AddressBook, filename: str = "addressbook.pkl") -> None:
+    with open(filename, "wb") as f:
+        pickle.dump(book, f)
+
+
+def load_data(filename: str = "addressbook.pkl") -> AddressBook:
+    try:
+        with open(filename, "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return AddressBook()
 
 
 def parse_input(user_input: str) -> Tuple[str, List[str]]:
@@ -337,60 +345,52 @@ def main() -> None:
     """
     Entry point for assistant bot.
     """
-    book = AddressBook()
+    book = load_data()
     print("Welcome to the assistant bot!")
 
-    while True:
-        user_input = input("Enter a command: ")
-        command, args = parse_input(user_input)
-
-        if command in ["close", "exit"]:
-            print("Good bye!")
-            break
-
-        if command == "":
-            print("Please enter a command.")
-            continue
-
-        elif command == "hello":
-            print("How can I help you?")
-
-        elif command == "add":
-            print(add_contact(args, book))
-
-        elif command == "change":
-            print(change_contact(args, book))
-
-        elif command == "phone":
-            print(show_phone(args, book))
-
-        elif command == "all":
-            print(show_all(book))
-
-        elif command == "add-birthday":
-            print(add_birthday(args, book))
-
-        elif command == "show-birthday":
-            print(show_birthday(args, book))
-
-        elif command == "birthdays":
-            print(birthdays(book))
-
-        else:
-            print("Invalid command.")
-
-
-def save_data(book, filename="addressbook.pkl"):
-    with open(filename, "wb") as f:
-        pickle.dump(book, f)
-
-
-def load_data(filename="addressbook.pkl"):
     try:
-        with open(filename, "rb") as f:
-            return pickle.load(f)
-    except FileNotFoundError:
-        return AddressBook()
+        while True:
+            user_input = input("Enter a command: ")
+            command, args = parse_input(user_input)
+
+            if command in ["close", "exit"]:
+                save_data(book)
+                print("Good bye!")
+                break
+
+            if command == "":
+                print("Please enter a command.")
+                continue
+
+            elif command == "hello":
+                print("How can I help you?")
+
+            elif command == "add":
+                print(add_contact(args, book))
+
+            elif command == "change":
+                print(change_contact(args, book))
+
+            elif command == "phone":
+                print(show_phone(args, book))
+
+            elif command == "all":
+                print(show_all(book))
+
+            elif command == "add-birthday":
+                print(add_birthday(args, book))
+
+            elif command == "show-birthday":
+                print(show_birthday(args, book))
+
+            elif command == "birthdays":
+                print(birthdays(book))
+
+            else:
+                print("Invalid command.")
+    finally:
+        save_data(book)
+
 
 if __name__ == "__main__":
     main()
